@@ -1,0 +1,7 @@
+# This tells Netlify to use the Flutter build plugin.
+[[plugins]]
+package = "netlify-plugin-flutter"
+
+# Flutter version.
+[plugins.inputs]
+flutter = "3.35.5"
