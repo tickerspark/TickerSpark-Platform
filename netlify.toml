@@ -2,6 +2,6 @@
 [[plugins]]
 package = "netlify-plugin-flutter"
 
-# Flutter version.
+# This tells the plugin to use the latest STABLE version of Flutter.
 [plugins.inputs]
-flutter = "3.35.5"
+channel = "stable"
