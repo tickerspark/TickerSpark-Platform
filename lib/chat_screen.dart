@@ -1,16 +1,15 @@
 // lib/chat_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart'; // import for launching URLs
+import 'package:url_launcher/url_launcher.dart';
 import 'chat_provider.dart';
-import 'main.dart'; // Import to access the theme provider
+import 'main.dart';
 import 'message_model.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
-
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
@@ -24,29 +23,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (textToSend.isNotEmpty) {
       ref.read(chatProvider.notifier).sendMessage(textToSend);
       _controller.clear();
-      // Scroll to the bottom when a new message is sent
-      // Since ListView is reversed, this means scrolling to the top
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(0.0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       });
     }
   }
 
-  // Method to handle suggested prompt taps
   void _onSuggestedPromptTap(String prompt) {
-    _controller.text = prompt; // Prefill the text field
-    _handleSend(prompt); // Send immediately
+    _controller.text = prompt;
+    _handleSend(prompt);
   }
 
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatProvider);
     final themeMode = ref.watch(themeModeProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('TickerSpark AI'),
@@ -54,24 +45,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           IconButton(
             icon: Icon(themeMode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
             onPressed: () {
-              ref.read(themeModeProvider.notifier).state =
-                  themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+              ref.read(themeModeProvider.notifier).state = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
             },
           ),
         ],
       ),
+      // SelectionArea is expected in lib/main.dart
       body: messages.isEmpty
-          ? _SuggestedPrompts(onTap: _onSuggestedPromptTap) // Display prompts when no messages exist
-          : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-              reverse: true,
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final message = messages[messages.length - 1 - index];
-                return MessageBubble(message: message);
-              },
-            ),
+            ? _SuggestedPrompts(onTap: _onSuggestedPromptTap)
+            : ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                reverse: true,
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[messages.length - 1 - index];
+                  return MessageBubble(message: message);
+                },
+              ),
       bottomNavigationBar: _buildInputComposer(),
     );
   }
@@ -108,20 +99,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// WIDGET FOR SUGGESTED PROMPTS
-// -----------------------------------------------------------------------------
 class _SuggestedPrompts extends StatelessWidget {
   final void Function(String) onTap;
-  
-  // Example prompts relevant to a "TickerSpark AI"
   final List<String> prompts = const [
     'What is the current stock price of TSLA?',
     'Catch me up on the latest economic news and data.',
     'Tell me which stocks are trending this month and why.',
     'Explain the competitive positioning of AMD.',
   ];
-
   const _SuggestedPrompts({required this.onTap});
 
   @override
@@ -134,16 +119,13 @@ class _SuggestedPrompts extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'What can I help you with?',
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
+            Text('What can I help you with?', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
             const SizedBox(height: 24),
+            // Fixed: Removed .toList()
             ...prompts.map((prompt) => Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: _PromptCard(prompt: prompt, onTap: onTap),
-            )).toList(),
+            )),
           ],
         ),
       ),
@@ -154,7 +136,6 @@ class _SuggestedPrompts extends StatelessWidget {
 class _PromptCard extends StatelessWidget {
   final String prompt;
   final void Function(String) onTap;
-
   const _PromptCard({required this.prompt, required this.onTap});
 
   @override
@@ -179,10 +160,7 @@ class _PromptCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   prompt,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface),
                 ),
               ),
               const Icon(Icons.arrow_forward_ios, size: 16),
@@ -194,15 +172,14 @@ class _PromptCard extends StatelessWidget {
   }
 }
 
-// ---Message Bubble Widget----
 class MessageBubble extends StatelessWidget {
   final Message message;
   const MessageBubble({super.key, required this.message});
 
-  // Function to handle link clicks
-  void _onLinkTap(String? url, String? href, String title) async {
-    if (href != null) {
-      final uri = Uri.tryParse(href);
+  // Updated method signature to match GptMarkdown's onLinkTap callback
+  void _onLinkTap(String url, String title) async { 
+    if (url.isNotEmpty) {
+      final uri = Uri.tryParse(url);
       if (uri != null && await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
@@ -213,16 +190,11 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isUser = message.sender == MessageSender.user;
     final theme = Theme.of(context);
-
     final bgColor = isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer;
     final textColor = isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant;
     
-    final markdownStyle = MarkdownStyleSheet.fromTheme(theme).copyWith(
-      p: theme.textTheme.bodyMedium?.copyWith(color: textColor),
-      h3: theme.textTheme.titleMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-      strong: theme.textTheme.bodyMedium?.copyWith(color: textColor, fontWeight: FontWeight.bold),
-    );
-
+    // MarkdownStyleSheet block was deleted
+    
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -240,15 +212,17 @@ class MessageBubble extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(textColor)),
                 )
               : isUser 
-                  ? SelectableText(
+                  ? Text( // Simple Text widget for user, selection handled by outer SelectionArea
                       message.content,
                       style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
                     )
-                  : MarkdownBody(
-                      data: message.content,
-                      selectable: true,
-                      styleSheet: markdownStyle,
-                      onTapLink: (text, href, title) => _onLinkTap(text, href, title), // Enable link tapping
+                  // Use GptMarkdown and corrected parameters
+                  : SelectionArea( 
+                      child: GptMarkdown( // Correct widget name
+                          message.content, // Positional argument for content
+                          style: theme.textTheme.bodyMedium?.copyWith(color: textColor), // Base style applied directly
+                          onLinkTap: _onLinkTap, // Correct named parameter
+                      ),
                     ),
       ),
     );
