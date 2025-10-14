@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart'; // import for launching URLs
 import 'chat_provider.dart';
 import 'main.dart'; // Import to access the theme provider
 import 'message_model.dart';
@@ -18,12 +19,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  void _handleSend() {
-    final message = _controller.text;
-    if (message.isNotEmpty) {
-      ref.read(chatProvider.notifier).sendMessage(message);
+  void _handleSend([String? message]) {
+    final textToSend = message ?? _controller.text;
+    if (textToSend.isNotEmpty) {
+      ref.read(chatProvider.notifier).sendMessage(textToSend);
       _controller.clear();
+      // Scroll to the bottom when a new message is sent
+      // Since ListView is reversed, this means scrolling to the top
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
     }
+  }
+
+  // Method to handle suggested prompt taps
+  void _onSuggestedPromptTap(String prompt) {
+    _controller.text = prompt; // Prefill the text field
+    _handleSend(prompt); // Send immediately
   }
 
   @override
@@ -44,18 +60,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ],
       ),
-      // 1. The body is NOW ONLY the list of messages.
-      body: ListView.builder(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-        reverse: true,
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          final message = messages[messages.length - 1 - index];
-          return MessageBubble(message: message);
-        },
-      ),
-      // 2. The input composer is moved to the bottomNavigationBar property.
+      body: messages.isEmpty
+          ? _SuggestedPrompts(onTap: _onSuggestedPromptTap) // Display prompts when no messages exist
+          : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              reverse: true,
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final message = messages[messages.length - 1 - index];
+                return MessageBubble(message: message);
+              },
+            ),
       bottomNavigationBar: _buildInputComposer(),
     );
   }
@@ -64,9 +80,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final theme = Theme.of(context);
     return Material(
       color: theme.colorScheme.surface,
-      elevation: 4, // Add a subtle shadow for separation
+      elevation: 4,
       child: Padding(
-        // The Scaffold handles the bottom safe area for this property
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Row(
           children: <Widget>[
@@ -93,10 +108,106 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 }
 
-// MessageBubble class remains unchanged
+// -----------------------------------------------------------------------------
+// WIDGET FOR SUGGESTED PROMPTS
+// -----------------------------------------------------------------------------
+class _SuggestedPrompts extends StatelessWidget {
+  final void Function(String) onTap;
+  
+  // Example prompts relevant to a "TickerSpark AI"
+  final List<String> prompts = const [
+    'What is the current stock price of TSLA?',
+    'Compare the Q3 performance of AAPL and MSFT.',
+    'Give me a summary of the latest market news.',
+    'Explain the concept of P/E ratio simply.',
+  ];
+
+  const _SuggestedPrompts({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'What can I help you with?',
+              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ...prompts.map((prompt) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: _PromptCard(prompt: prompt, onTap: onTap),
+            )).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PromptCard extends StatelessWidget {
+  final String prompt;
+  final void Function(String) onTap;
+
+  const _PromptCard({required this.prompt, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.surfaceContainerHigh,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+      ),
+      child: InkWell(
+        onTap: () => onTap(prompt),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              const Icon(Icons.flash_on, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  prompt,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---Message Bubble Widget----
 class MessageBubble extends StatelessWidget {
   final Message message;
   const MessageBubble({super.key, required this.message});
+
+  // Function to handle link clicks
+  void _onLinkTap(String? url, String? href, String title) async {
+    if (href != null) {
+      final uri = Uri.tryParse(href);
+      if (uri != null && await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,16 +234,22 @@ class MessageBubble extends StatelessWidget {
           borderRadius: BorderRadius.circular(18.0),
         ),
         child: message.isLoading
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(textColor)),
-              )
-            : MarkdownBody(
-                data: message.content,
-                selectable: true,
-                styleSheet: markdownStyle,
-              ),
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(textColor)),
+                )
+              : isUser 
+                  ? SelectableText(
+                      message.content,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: textColor),
+                    )
+                  : MarkdownBody(
+                      data: message.content,
+                      selectable: true,
+                      styleSheet: markdownStyle,
+                      onTapLink: (text, href, title) => _onLinkTap(text, href, title), // Enable link tapping
+                    ),
       ),
     );
   }
