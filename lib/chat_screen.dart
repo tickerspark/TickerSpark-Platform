@@ -117,9 +117,9 @@ class _SuggestedPrompts extends StatelessWidget {
   // Example prompts relevant to a "TickerSpark AI"
   final List<String> prompts = const [
     'What is the current stock price of TSLA?',
-    'Compare the Q3 performance of AAPL and MSFT.',
-    'Give me a summary of the latest market news.',
-    'Explain the concept of P/E ratio simply.',
+    'Catch me up on the latest economic news and data.',
+    'Tell me which stocks are trending this month and why.',
+    'Explain the competitive positioning of AMD.',
   ];
 
   const _SuggestedPrompts({required this.onTap});
