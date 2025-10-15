@@ -43,7 +43,7 @@ serve(async (req)=>{
     // We add `&select=sys.id,sys.publishedAt,sys.updatedAt` to the URL.
     // This tells Contentful to ONLY send back these three essential system fields,
     // ignoring all the large content fields.
-    // Forcing CI/CD run after final YAML path review
+    // Forcing CI/CD run after final YAML path review.
     const contentfulUrl = `https://cdn.contentful.com/spaces/${spaceId}/environments/${environment}/entries?limit=${limit}&skip=${skip}&sys.contentType.sys.id[in]=${contentfulTypes}&order=sys.createdAt&select=sys.id,sys.publishedAt,sys.updatedAt`;
     const contentfulResponse = await fetch(contentfulUrl, {
       headers: {
