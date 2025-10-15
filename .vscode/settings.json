@@ -1,0 +1,26 @@
+{
+  "deno.enable": true,
+  
+  "deno.remote": true, 
+
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  
+  "deno.lint": true,
+  
+  // Simplified list of unstable features needed for Supabase functions
+  "deno.unstable": [
+    "cron",
+    "broadcast-channel",
+    "kv",
+    "net",
+    "ffi",
+    "http",
+    "fs"
+  ],
+
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  }
+}
