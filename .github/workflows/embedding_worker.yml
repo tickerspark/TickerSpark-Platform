@@ -1,0 +1,20 @@
+name: Embedding Worker Cron Job
+
+on:
+  schedule:
+    # This cron string means "run at every minute."
+    - cron: '*/5 * * * *'
+  # This allows you to also run the job manually from the GitHub Actions tab for testing.
+  workflow_dispatch:
+
+jobs:
+  trigger-embedding-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase Edge Function to process embedding queue
+        # This command makes the secure HTTP request using the secrets you just configured.
+        run: |
+          curl -X POST \
+            '${{ secrets.EMBEDDING_GENERATOR_URL }}' \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.EMBEDDING_CRON_SECRET }}"

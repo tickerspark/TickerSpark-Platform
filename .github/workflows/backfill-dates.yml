@@ -1,0 +1,29 @@
+name: Manual Contentful Backfill Dates
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip:
+        description: 'The starting number of articles to skip (offset).'
+        required: true
+        default: '0'
+      limit:
+        description: 'The number of articles to process in this batch.'
+        required: true
+        default: '25'
+
+jobs:
+  trigger-backfill-function:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase Backfill Function
+        # The env block isolates GitHub expressions from the shell
+        env:
+          BACKFILL_DATES_URL: ${{ secrets.BACKFILL_DATES_URL }}
+          BACKFILL_TOKEN: ${{ secrets.BACKFILL_SECRET }}
+          PAYLOAD: '{"skip": ${{ github.event.inputs.skip }}, "limit": ${{ github.event.inputs.limit }} }'
+        run: |
+          curl -L -X POST "$BACKFILL_DATES_URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $BACKFILL_TOKEN" \
+            --data-raw "$PAYLOAD"
