@@ -51,7 +51,7 @@ class MyApp extends ConsumerWidget {
 
       // 5. Set the current theme mode
       themeMode: themeMode,
-      home: const ChatScreen(),
+      home: const AuthGate(),
     );
   }
 }
